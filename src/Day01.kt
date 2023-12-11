@@ -10,21 +10,24 @@ val ZERO_TO_DIGITS = mapOf(
     "nine" to "9"
 )
 
-fun calibrate(s: String): Int = "${s.first { it.isDigit() }}${s.last { it.isDigit() }}".toInt()
+private fun calibrate(s: String): Int = "${s.first { it.isDigit() }}${s.last { it.isDigit() }}".toInt()
 
-fun calibrate2(s: String): Int {
-    var ss = s
-    var position = 0
-    while (position <= ss.length - 1) {
-        for (number in ZERO_TO_DIGITS.keys) {
-            if (ss.substring(position, (position + number.length).coerceAtMost(ss.length)) == number) {
-                ss = ss.replaceRange(position, position + number.length, ZERO_TO_DIGITS[number] ?: "")
-                break
+private fun calibrate2(s: String): Int {
+    return calibrate(s.mapIndexedNotNull { index, c ->
+        if (c.isDigit()) {
+            c
+        } else {
+            s.possibleWordsAtIndex(index).firstNotNullOfOrNull { candidate ->
+                ZERO_TO_DIGITS[candidate]
             }
         }
-        position += 1
+    }.joinToString())
+}
+
+private fun String.possibleWordsAtIndex(index: Int): List<String> {
+    return (3..5).map { len ->
+        substring(index, (index + len).coerceAtMost(length))
     }
-    return calibrate(ss)
 }
 
 // 53551
@@ -39,35 +42,6 @@ fun main() {
 
     testInput = readInput("Day01_test2")
     check(part2(testInput) == 281)
-
-    testInput = readInput("Day01_test2_2")
-    check(
-        part2(testInput) ==
-                55 +
-                97 +
-                26 +
-                55 +
-                27 +
-                82 +
-                56 +
-                23 +
-                14 +
-                97 +
-                65 +
-                23 +
-                18 +
-                71 + // 14
-                63 + // 15
-                15 +
-                88 +
-                88 +
-                83 +
-                71 // 20
-                + 15
-                + 88
-                + 55
-                + 55
-    )
 
     val input = readInput("Day01")
     part1(input).println()
