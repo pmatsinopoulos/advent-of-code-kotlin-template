@@ -4,8 +4,15 @@
 // For Each Set the number of blue, red, and green cubes
 // All sets in a game should be possible for the game to be possible.
 //
+
+enum class Color {
+    RED,
+    GREEN,
+    BLUE
+}
+
 data class SetOfCubes(
-    val numberOfColors: MutableMap<String, Int> = mutableMapOf() // "Red" -> 4, "Green" -> 5, "Blue" -> 6
+    val numberForColor: MutableMap<Color, Int> = mutableMapOf() // e.g. RED -> 4, GREEN -> 5, BLUE -> 6
 )
 
 data class Game(
@@ -20,10 +27,10 @@ data class Input(
 )
 
 fun buildSetOfCubes(input: String): SetOfCubes {
-    val numbersOfColors = input.split(",").map { it.trim() }
-    val setOfCubes = numbersOfColors.fold(SetOfCubes()) { acc, numberOfColor ->
-        val (number, color) = numberOfColor.split(" ").map { it.trim() }
-        acc.numberOfColors[color] = number.toInt()
+    val numbersForColors = input.split(",").map { it.trim() }
+    val setOfCubes = numbersForColors.fold(SetOfCubes()) { acc, numberForColor ->
+        val (number, color) = numberForColor.split(" ").map { it.trim() }
+        acc.numberForColor[Color.valueOf(color.uppercase())] = number.toInt()
         acc
     }
     return setOfCubes
@@ -39,9 +46,9 @@ fun buildGame(input: String): Game {
 }
 
 fun possibleSet(set: SetOfCubes, input: Input): Boolean {
-    return set.numberOfColors.getOrDefault("red", 0) <= input.red &&
-            set.numberOfColors.getOrDefault("green", 0) <= input.green &&
-            set.numberOfColors.getOrDefault("blue", 0) <= input.blue
+    return set.numberForColor.getOrDefault(Color.RED, 0) <= input.red &&
+            set.numberForColor.getOrDefault(Color.GREEN, 0) <= input.green &&
+            set.numberForColor.getOrDefault(Color.BLUE, 0) <= input.blue
 }
 
 fun possibleGame(game: Game, input: Input): Boolean {
