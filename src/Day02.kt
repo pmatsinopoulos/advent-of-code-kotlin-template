@@ -21,10 +21,10 @@ data class Input(
 
 fun buildSetOfCubes(input: String): SetOfCubes {
     val numbersOfColors = input.split(",").map { it.trim() }
-    val setOfCubes = SetOfCubes()
-    numbersOfColors.forEach { numberOfColor ->
+    val setOfCubes = numbersOfColors.fold(SetOfCubes()) { acc, numberOfColor ->
         val (number, color) = numberOfColor.split(" ").map { it.trim() }
-        setOfCubes.numberOfColors[color] = number.toInt()
+        acc.numberOfColors[color] = number.toInt()
+        acc
     }
     return setOfCubes
 }
