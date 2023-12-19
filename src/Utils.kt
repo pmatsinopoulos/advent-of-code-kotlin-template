@@ -23,3 +23,5 @@ fun Any?.println() = println(this)
 fun Char.isDot() = this == '.'
 
 fun Char.isSymbol() = !this.isDot() && !this.isDigit()
+
+fun Char.isGear() = this == '*'
