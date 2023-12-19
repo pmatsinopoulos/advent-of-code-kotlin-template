@@ -45,32 +45,35 @@ fun numberHasNeighbouringSymbol(
 
 fun neighbouringGears(
     matrix: Array<CharArray>,
-    startDigitPosition: Pair<Int, Int>,
-    endDigitPosition: Pair<Int, Int>
+    number: NumberInMatrix
 ): MutableList<Pair<Int, Int>> {
     // A number may have many Gear neighbours
-    val result = mutableListOf<Pair<Int, Int>>()
+    val result = mutableListOf<GearPosition>()
 
+    val startDigitPosition = number.first
     var startScan = startDigitPosition.second - 1
     if (startScan < 0) {
         startScan = 0
     }
+
+    val endDigitPosition = number.second
     var endScan = endDigitPosition.second + 1
     val numberOfColumns = matrix.first().size
     val numberOfRows = matrix.size
     if (endScan >= numberOfColumns) {
         endScan = numberOfColumns - 1
     }
+
     val rowIndex = startDigitPosition.first
     for (scanPosition in startScan..endScan) {
         if (matrix[rowIndex][scanPosition].isGear()) {
-            result.add(Pair(rowIndex, scanPosition))
+            result.add(GearPosition(rowIndex, scanPosition))
         }
         if (rowIndex > 0 && matrix[rowIndex - 1][scanPosition].isGear()) {
-            result.add(Pair(rowIndex - 1, scanPosition))
+            result.add(GearPosition(rowIndex - 1, scanPosition))
         }
         if (rowIndex < numberOfRows - 1 && matrix[rowIndex + 1][scanPosition].isGear()) {
-            result.add(Pair(rowIndex + 1, scanPosition))
+            result.add(GearPosition(rowIndex + 1, scanPosition))
         }
     }
     return result
@@ -78,11 +81,25 @@ fun neighbouringGears(
 
 fun digitsToNumber(
     matrix: Array<CharArray>,
-    startDigitPosition: Pair<Int, Int>,
-    endDigitPosition: Pair<Int, Int>
+    number: NumberInMatrix
 ): Int {
+    val startDigitPosition = number.first
+    val endDigitPosition = number.second
     return matrix[startDigitPosition.first].slice(startDigitPosition.second..endDigitPosition.second).joinToString("")
         .toInt()
+}
+
+typealias Position = Pair<Int, Int>
+typealias GearPosition = Position
+typealias DigitPosition = Position
+typealias StartPosition = DigitPosition
+typealias EndPosition = DigitPosition
+typealias NumberInMatrix = Pair<StartPosition, EndPosition>
+
+fun gearRatio(matrix: Array<CharArray>, numbers: MutableList<NumberInMatrix>): Int {
+    return numbers.fold(1) { acc, number ->
+        acc * digitsToNumber(matrix, number)
+    }
 }
 
 fun main() {
@@ -90,38 +107,34 @@ fun main() {
     for (input in inputs) {
         val matrix = buildMatrix(input)
         var sum = 0
-        val neighbouringGearsForNumbers: MutableMap<
-                Pair<Int, Int>, // Gear position
-                MutableList<
-                        Pair<
-                                Pair<Int, Int>, // starIndex
-                                Pair<Int, Int>  // endIndex of Number
-                                > // number
-                        > // numbers neighbouring with gear position
+        val numbersForGears: MutableMap<
+                GearPosition, // Gear position
+                MutableList<NumberInMatrix> // numbers neighbouring with gear position
                 > = mutableMapOf()
         matrix.forEachIndexed { rowIndex, chars ->
-            val digitPositions = mutableListOf<Pair<Int, Int>>()
+            val digitPositions =
+                mutableListOf<DigitPosition>() // an even set of digit positions, each pair representing the start and end position of a number
             var inDigit = false
             chars.forEachIndexed { columnIndex, c ->
                 if (c.isDot()) {
                     if (inDigit) {
-                        digitPositions.add(Pair(rowIndex, columnIndex - 1)) // adding the end digit position
+                        digitPositions.add(EndPosition(rowIndex, columnIndex - 1)) // adding the end digit position
                         inDigit = false
                     }
                 } else if (c.isDigit()) {
                     if (inDigit) {
                         if (columnIndex == chars.size - 1) {
                             // we are at the end of the row
-                            digitPositions.add(Pair(rowIndex, columnIndex)) // adding the end digit position
+                            digitPositions.add(EndPosition(rowIndex, columnIndex)) // adding the end digit position
                             inDigit = false
                         }
                     } else {
-                        digitPositions.add(Pair(rowIndex, columnIndex)) // adding the start digit position
+                        digitPositions.add(StartPosition(rowIndex, columnIndex)) // adding the start digit position
                         inDigit = true
                     }
                 } else if (c.isSymbol()) {
                     if (inDigit) {
-                        digitPositions.add(Pair(rowIndex, columnIndex - 1)) // adding the end digit position
+                        digitPositions.add(EndPosition(rowIndex, columnIndex - 1)) // adding the end digit position
                         inDigit = false
                     }
                 }
@@ -129,32 +142,22 @@ fun main() {
             // here, I have all the pairs of beginnings and endings of numbers
             var i = 0
             while (i < digitPositions.size) {
-                val neighbouringGearsForNumber = neighbouringGears(matrix, digitPositions[i], digitPositions[i + 1])
+                val numberInMatrix = NumberInMatrix(digitPositions[i], digitPositions[i + 1])
+                val neighbouringGearsForNumber = neighbouringGears(matrix, numberInMatrix)
                 neighbouringGearsForNumber.forEach { gearForNumber ->
-                    if (neighbouringGearsForNumbers[gearForNumber] == null) {
-                        neighbouringGearsForNumbers[gearForNumber] =
-                            mutableListOf(Pair(digitPositions[i], digitPositions[i + 1]))
-                    } else {
-                        neighbouringGearsForNumbers[gearForNumber]?.add(Pair(digitPositions[i], digitPositions[i + 1]))
+                    if (numbersForGears[gearForNumber] == null) {
+                        numbersForGears[gearForNumber] = mutableListOf()
                     }
+                    numbersForGears[gearForNumber]?.add(numberInMatrix)
                 }
 
                 i += 2
             }
         }
-        neighbouringGearsForNumbers.forEach { gearPosition, numbers ->
-            if (numbers.size >= 2) {
-                var product = 1
-                numbers.forEach { number ->
-                    product *= digitsToNumber(
-                        matrix,
-                        startDigitPosition = number.first,
-                        endDigitPosition = number.second
-                    )
-                }
-                sum += product
-            }
-        }
+        sum = numbersForGears.filterValues { numbers -> numbers.size >= 2 }
+            .values.map { numbers ->
+                gearRatio(matrix, numbers)
+            }.sum()
         println(sum)
     }
 }
